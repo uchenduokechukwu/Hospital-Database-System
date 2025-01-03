@@ -222,18 +222,18 @@ values(1, 'Leuprolide'),
 (14, 'Ibuprofen'),
 (14, 'Oxycodone')
 select * from medicinesprescribed
---Question 2
---constraint that checks date on current appointments
+
+-- 2. constraint that checks date on current appointments
 ALTER TABLE CurrentAppointments add  constraint Ck_AppointmentDate Check (AppointmentDate >= cast(getdate() as date))
 
----Question 3
+---List all the patients with older than 40 and have Cancer in diagnosis.
 select distinct p.FirstName, p.MiddleName, p.LastName from Patients p
 inner join MedicalRecords m on p.PatientID =  m.PatientID
--- Filter the results to include only patients who are over 40 years old and have been diagnosed with cancer
+-- 3. Filter the results to include only patients who are over 40 years old and have been diagnosed with cancer
 Where Datediff(year, p.DateOfBirth, getdate()) > 40
 and m.Diagnoses like '%Cancer%'
 
----Question 4a
+--- 4.Search the database of the hospital for matching character strings by name of medicine. Results should be sorted with most recent medicine prescribed date first.
 create procedure SearchMedicineByName @medicinename nvarchar(100)
 As
 Begin
@@ -250,7 +250,7 @@ end;
 
 EXEC SearchMedicineByName @MedicineName = 'A';
 
----Question 4b
+--- 5. Return a full list of diagnosis and allergies for a specific patient who has an appointment today
  create procedure TodaysAppointment @patientID tinyint
 As
 Begin
@@ -265,7 +265,7 @@ end;
 
 exec TodaysAppointment @patientID = 10
 
----Question 4c
+---6. Update the details for an existing doctor
 Create procedure uspupdatedoctors @doctorID tinyint, @firstname nvarchar(30), @middlename nvarchar(30), @lastname nvarchar(30), 
 @specialty nvarchar(50), @departmentID tinyint, @telephone nvarchar(20), @starttime time, @endtime time
 as 
@@ -294,7 +294,7 @@ EXEC uspupdatedoctors
     @starttime = '12:00:00',
     @endtime = '23:59:59'
 
-	---Question 4d
+	---7. Delete the appointment who status is already completed.
 	create trigger appointment_delete 
 on currentappointments
 after delete 
@@ -322,7 +322,7 @@ where patientID = 6
 
 exec completedappointment
 
----Question 5
+--- 8. View containing all the required information of Doctors
 create view DoctorsSummary 
 (DoctorID, FirstName, LastName, Specialty, DepartmentID, DepartmentName, DepartmentTelephone, CurrentAppointmentID, 
 PastAppointmentID, CurrentAppointmentDate, PastAppointmentDate, CurrentAppointmentTime, PastAppointmentTime, Review)
@@ -336,7 +336,7 @@ inner join CurrentAppointments c on c.doctorID = p.doctorID
 
 select * from DoctorsSummary
 
----Question 6
+--- 9. Create a trigger so that the current state of an appointment can be changed to available when it is cancelled.
 create trigger CancelledAppointments
 on currentappointments
 after update
@@ -359,26 +359,19 @@ update currentappointments
 set status = 'Cancelled'
 where patientID = 3
 
----Question 7
+--- 10. Query which allows the hospital to identify the number of completed appointments with the specialty of doctors as ‘Gastroenterologists’.
 select d.Departmentname, count(*) as No_of_Appointments
 from Doctors_Department d inner join Doctors dr  on d.DepartmentID = dr.DepartmentID
 inner join PastAppointments pa on dr.DoctorID = pa.DoctorID
 where departmentname like 'G%' -- Filter departments whose name starts with 'G'
 group by departmentname
 
----To get more than a satisfactory mark, you must use all of the below at least once in your database:
----Views
----Stored procedures
----System functions and user defined functions
----Triggers
----SELECT queries which make use of joins and sub-queries.
-
 ---system define function
---- 'datediff' calculates the difference between days
+--- 11. 'datediff' calculates the difference between days
 select DoctorID, FirstName, LastName, Specialty, datediff(d, PastAppointmentDate, CurrentAppointmentDate) 
 as NumberOfDaysBetweenAppointments from DoctorsSummary
 
----SELECT queries which make use of joins and sub-queries.
+--- 12. SELECT queries which make use of joins and sub-queries.
 select p.PatientID, p.FirstName + ' ' + isnull(p.MiddleName,'') + ' ' + p.LastName as FullName, AppointmentID, 
 AppointmentDate, AppointmentTime, d.DoctorID, d.FirstName + ' ' + isnull(d.MiddleName,'') + ' ' + d.LastName as Doctor, d.Specialty from Patients p
 inner join CurrentAppointments c on p.PatientID = c.PatientID
@@ -387,7 +380,7 @@ where p.PatientID in(select m.PatientID from medicalrecords  -- Subquery to sele
 inner join medicalrecords m on c.PatientID = m.PatientID
 where m.Diagnoses like '%Cancer%')
 
----View
+--- 13. View of Patient full details
 create view PatientFullDetails
 (PatientID, FullName, EmailAddress, Telephone, FullAddress,DateofBirth, Insurance)
 as
@@ -397,7 +390,7 @@ from Patients p join Addresses a on p.AddressID = a.AddressID
 
 select * from PatientFullDetails
 
----Procedure
+--- 14. Procedure that checks doctors availability
 create procedure DoctorsAvailability @starttime time, @endtime time
 as 
 begin
